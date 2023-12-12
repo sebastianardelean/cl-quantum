@@ -6,12 +6,13 @@
 (defclass qcircuit ()
   (
    (number-of-qubits :accessor number-of-qubits :initarg :number-of-qubits)
+   (number-of-bits   :accessor number-of-bits   :initarg :number-of-bits)
    (gates :accessor gates :initarg :gates)
   ))
 
 
-(defun make-qcircuit (number-of-qubits)
-  (make-instance 'qcircuit :number-of-qubits number-of-qubits :gates '()))
+(defun make-qcircuit (number-of-qubits number-of-bits)
+  (make-instance 'qcircuit :number-of-qubits number-of-qubits :number-of-bits number-of-bits :gates '()))
 
 
 (defconstant HGATE 1)
@@ -24,8 +25,8 @@
 
 
 
-(defmethod (setf gates) (new-val (obj qcircuit))   
-    (setf (slot-value obj 'gates) new-val))
+;;(defmethod (setf gates) (new-val (obj qcircuit))   
+;;    (setf (slot-value obj 'gates) new-val))
 
 
 
@@ -79,11 +80,12 @@
 
 (defun map-to-json (circuit &optional result-string)
   (let (
-        (qubits-str (format nil "{\"qubits\":~a, \"gates\":[ " (number-of-qubits circuit)))
+        (qubits-str (format nil "{\"qubits\":~a, \"bits\":~a, \"gates\":[ " (number-of-qubits circuit) (number-of-bits circuit)))
         (gates-str  (create-qubits-str (gates circuit) "")))
     (concatenate 'string result-string qubits-str (subseq gates-str 0 (1- (length gates-str))) "]}")))
     
-
+(defun generate-qasm (circuit &optional result-string)
+  result-string)
 ;;;{
 ;;;   qubits: 3,
 ;;;   gates: [
