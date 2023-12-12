@@ -28,7 +28,7 @@
     (setf (slot-value obj 'gates) new-val))
 
 
-;; blah blah blah.
+
 (defun h-gate (circuit q)
   (let ((x (gates circuit))
         (qubits (number-of-qubits circuit)))
@@ -58,22 +58,7 @@
 
 
 
-(defun list-to-string (xs &optional result-string)
-  (if xs
-      (let ((el (car xs)))
-        (list-to-string (cdr xs) (concatenate 'string result-string (format nil "~a" el))))
-      result-string))
 
-
-;;(defun map-to-json (number-of-qubits xs &optional result-string)
-;;  (if xs
-;;      (map-to-json (cdr xs)
-;;                   (concatenate 'string result 
-;;  )
-
-(defun construct-json-qubits (circuit &optional result-string)
-  (let ((qubits (number-of-qubits circuit)))
-    (concatenate 'string result-string "{\"qubits\":" (format nil "~a" qubits))))
 
 
 (defun gate-to-number-map (val)
