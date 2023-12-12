@@ -77,15 +77,6 @@
         (create-qubits-str (cdr xs) (concatenate 'string result-str (format nil "{\"gate\":~a, \"ctrl\":~a, \"targ\":~a}," (gate-to-number-map (first el)) (second el) (third el)))))
       result-str))
 
-
-(defun map-to-json (circuit &optional result-string)
-  (let (
-        (qubits-str (format nil "{\"qubits\":~a, \"bits\":~a, \"gates\":[ " (number-of-qubits circuit) (number-of-bits circuit)))
-        (gates-str  (create-qubits-str (gates circuit) "")))
-    (concatenate 'string result-string qubits-str (subseq gates-str 0 (1- (length gates-str))) "]}")))
-    
-(defun generate-qasm (circuit &optional result-string)
-  result-string)
 ;;;{
 ;;;   qubits: 3,
 ;;;   gates: [
@@ -101,3 +92,69 @@
 ;;;         }
 ;;;          ]
 ;;;
+
+
+(defun map-to-json (circuit &optional result-string)
+  (let (
+        (qubits-str (format nil "{\"qubits\":~a, \"bits\":~a, \"gates\":[ " (number-of-qubits circuit) (number-of-bits circuit)))
+        (gates-str  (create-qubits-str (gates circuit) "")))
+    (concatenate 'string result-string qubits-str (subseq gates-str 0 (1- (length gates-str))) "]}")))
+
+
+
+;;;;OpenQASM V3 output
+
+;;;;;QRegister Class
+(defclass qregister ()
+  ((qubits :accessor qubits :initarg :qubits)
+   (name :accessor name :initarg :name)))
+
+(defun make-qregister (qubits name)
+  (make-instance 'qregister :qubits qubits :name name))
+
+(defmethod print-object ((obj qregister) stream)
+  (print-unreadable-object (obj stream :type t)
+    (format stream "qubits ~a, name: ~a" (qubits obj) (name obj))))
+
+;;;;;CRegister Class
+(defclass cregister ()
+  ((bits :accessor bits :initarg :bits)
+   (name :accessor name :initarg :name)))
+
+(defun make-cregister (bits name)
+  (make-instance 'cregister :bits bits :name name))
+
+(defmethod print-object ((obj cregister) stream)
+  (print-unreadable-object (obj stream :type t)
+    (format stream "bits ~a, name: ~a" (bits obj) (name obj))))
+
+
+;;;;;QGate Class
+(defclass qgate ()
+  ((controls :accessor controls :initarg :controls)
+   (target   :accessor target   :initarg :target)
+   (name     :accessor name     :initarg :name)))
+
+(defun make-qgate (control target name)
+  (make-instance 'qgate :controls control :target target :name name))
+
+(defmethod print-object ((obj qgate) stream)
+  (print-unreadable-object (obj stream :type t)
+    (format stream "controls ~a, target: ~a, name: ~a" (controls obj) (target obj) (name obj))))
+
+
+;;;;;QCircuit Class
+(defclass qcircuit2 ()
+  ((qreg :accessor qreg :initarg :qreg)
+   (creg :accessor creg :initarg :creg)
+   (gates :accessor gates :initarg :gates)))
+
+(defun make-qcircuit2 (qreg creg)
+  (make-instance 'qcircuit2 :qreg qreg :creg creg :gates '()))
+
+(defmethod print-object ((obj qcircuit2) stream)
+  (print-unreadable-object (obj stream :type t)
+    (format stream "qreg: ~a, creg: ~a, gates: ~a" (qreg obj) (creg obj) (gates obj))))
+
+(defun generate-qasm (circuit &optional result-string)
+  result-string)
