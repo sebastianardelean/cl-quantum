@@ -160,7 +160,7 @@
         (operators (get-operators (reverse (gates qc)) (name (qreg qc)) (name (creg qc)) "")))
     (concatenate 'string result-str header regs operators)))
 
-(defun create-openqasm-file (file-path)
+(defun create-openqasm-file (qc file-path)
   (with-open-file (stream file-path
                           :direction :output
                           :if-exists :supersede
