@@ -6,15 +6,21 @@
 
 ;; NOTE: To run this test file, execute `(asdf:test-system :cl-quantum)' in your Lisp.
 
-(defconstant +QREG+ (make-qregister 2 "q"))
-(defconstant +CREG+ (make-cregister 2 "c"))
-(defconstant +QC+ (make-qcircuit qreg creg))
-(hgate qc 0)
-(xgate qc 1)
-(ygate qc 0)
-(zgate qc 1)
-(measure qc 0 1)
+(deftest test-create-qreg
+  (testing "Creating qregister"
+    (let ((reg (make-qregister 2 "q")))
+      (ok (= 2 (qubits reg))))))
 
-(deftest test-target-1
-  (testing "should (= 1 1) to be true"
-    (ok (= 1 1))))
+(deftest test-create-creg
+  (testing "Creating cregister"
+    (let ((reg (make-cregister 2 "c")))
+      (ok (= 2 (bits reg))))))
+
+(deftest test-create-qcircuit
+  (testing "Creating circuit"
+    (let ((creg (make-cregister 2 "c"))
+          (qreg (make-qregister 2 "q"))
+          (qc   (make-qcircuit qreg creg)))
+      (ok (and (= 2 (qubits (qreg qc))) (= 2 (bits (creg qc))))))))
+
+

@@ -1,6 +1,6 @@
 (defsystem "cl-quantum"
   :version "0.0.1"
-  :author "23ars"
+  :author "Sebastian Ardelean"
   :license ""
   :depends-on ()
   :components ((:module "src"
@@ -10,7 +10,7 @@
   :in-order-to ((test-op (test-op "cl-quantum/tests"))))
 
 (defsystem "cl-quantum/tests"
-  :author "23ars"
+  :author "Sebastian Ardelean"
   :license ""
   :depends-on ("cl-quantum"
                "rove")

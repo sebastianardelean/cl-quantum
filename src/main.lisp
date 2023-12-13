@@ -1,18 +1,32 @@
 (defpackage cl-quantum
-  (:use :cl))
+  (:use :cl)
+  (:export #:qregister
+           #:make-qregister
+           #:print-object
+           #:qubits
+           #:cregister
+           #:make-cregister
+           #:print-object
+           #:bits
+           #:qgate
+           #:make-qgate
+           #:print-object
+           #:qcircuit
+           #:make-qcircuit
+           #:print-object
+           #:qreg
+           #:creg
+           #:hgate
+           #:xgate
+           #:ygate
+           #:zgate
+           #:cnotgate
+           #:measure
+           #:create-openqasm
+           #:create-openqasm-file))
+
 (in-package :cl-quantum)
 
-
-(defclass qcirc ()
-  (
-   (number-of-qubits :accessor number-of-qubits :initarg :number-of-qubits)
-   (number-of-bits   :accessor number-of-bits   :initarg :number-of-bits)
-   (gates :accessor gates :initarg :gates)
-  ))
-
-
-(defun make-qcirc (number-of-qubits number-of-bits)
-  (make-instance 'qcirc :number-of-qubits number-of-qubits :number-of-bits number-of-bits :gates '()))
 
 
 (defconstant +HGATE+ 1)
@@ -22,84 +36,7 @@
 (defconstant +CNOTGATE+ 5)
 (defconstant +MEASURE+  30)
 
-
-
-
-
-
-(defun h-gate (circuit q)
-  (let ((x (gates circuit))
-        (qubits (number-of-qubits circuit)))
-    (if (> qubits q) (setf (gates circuit) (push (list +HGATE+ q -1) x)) (format t "error"))))
-        
-(defun z-gate (circuit q)
-  (let ((x (gates circuit))
-        (qubits (number-of-qubits circuit)))
-    (if (> qubits q) (setf (gates circuit) (push (list +ZGATE+ q -1) x)) (format t "error"))))
-
-(defun x-gate (circuit q)
-  (let ((x (gates circuit))
-        (qubits (number-of-qubits circuit)))
-    (if (> qubits q) (setf (gates circuit) (push (list +XGATE+ q -1) x)) (format t "error"))))
-
-(defun y-gate (circuit q)
-  (let ((x (gates circuit))
-        (qubits (number-of-qubits circuit)))
-    (if (> qubits q) (setf (gates circuit) (push (list +YGATE+ q -1) x)) (format t "error"))))
-
-
-(defun cnot-gate (circuit ctrl targ)
-  (let ((x (gates circuit))
-        (qubits (number-of-qubits circuit)))
-    (if (and (> qubits targ) (> qubits ctrl) (/= ctrl targ)) (setf (gates circuit) (push (list +CNOTGATE+ ctrl targ) x)) (format t "error"))))
-
-
-
-
-
-
-
-(defun gate-to-number-map (val)
-  (cond
-    ((= val 1) "\"hadamard\"")
-    ((= val 2) "\"xgate\"")
-    ((= val 3) "\"ygate\"")
-    ((= val 4) "\"zgate\"")
-    ((= val 5) "\"cnotgate\"")))
-
-
-(defun create-qubits-str (xs &optional result-str)
-  (if xs
-      (let ((el (car xs)))
-        (create-qubits-str (cdr xs) (concatenate 'string result-str (format nil "{\"gate\":~a, \"ctrl\":~a, \"targ\":~a}," (gate-to-number-map (first el)) (second el) (third el)))))
-      result-str))
-
-;;;{
-;;;   qubits: 3,
-;;;   gates: [
-;;;         {
-;;;          "gate": "hadamard",
-;;;          "ctrl":  0,
-;;;          "targ": -1,
-;;;         },
-;;;         {
-;;;          "gate": "cnot",
-;;;          "ctrl": 0,
-;;;          "targ": 1
-;;;         }
-;;;          ]
-;;;
-
-
-(defun map-to-json (circuit &optional result-string)
-  (let (
-        (qubits-str (format nil "{\"qubits\":~a, \"bits\":~a, \"gates\":[ " (number-of-qubits circuit) (number-of-bits circuit)))
-        (gates-str  (create-qubits-str (reverse (gates circuit)) "")))
-    (concatenate 'string result-string qubits-str (subseq gates-str 0 (1- (length gates-str))) "]}")))
-
-
-
-;;;;OpenQASM V3 output
+;;;;OpenQASM V2 output
 
 ;;;;;QRegister Class
 (defclass qregister ()
@@ -139,9 +76,6 @@
 (defmethod print-object ((obj qgate) stream)
   (print-unreadable-object (obj stream :type t)
     (format stream "controls ~a, target: ~a, name: ~a, id: ~a" (controls obj) (target obj) (name obj) (gateid obj))))
-
-
-
 
 
 
@@ -199,12 +133,6 @@
 
 
 
-
-
-(defun generate-openqasm-header ()
-  (let ((header-str (format nil "OPENQASM 2.0;~%include \"qelib1.inc\";~%")))
-    header-str))
-
 (defun get-gate (gate qregname cregname)
   (let ((ctrl (controls gate))
         (targ (target gate))
@@ -218,9 +146,6 @@
       ((= gid 30) (format nil "measure ~a[~a] -> ~a[~a];~%" qregname ctrl cregname targ)))))
     
 
-
-
-
 (defun get-operators (xs qregname cregname &optional result-str)
   (if xs
       (let ((el (car xs)))
@@ -228,30 +153,31 @@
                                              result-str
                                              (get-gate el qregname cregname)))) result-str))
 
-
-(defun get-openqasm (qc &optional result-str)
+(defun create-openqasm (qc &optional result-str)
   (let (
-        (header (generate-openqasm-header))
+        (header (format nil "OPENQASM 2.0;~%include \"qelib1.inc\";~%"))
         (regs (format nil "qreg ~a[~a];~% creg ~a[~a];~%" (name (qreg qc)) (qubits (qreg qc)) (name (creg qc)) (bits (creg qc))))
         (operators (get-operators (reverse (gates qc)) (name (qreg qc)) (name (creg qc)) "")))
     (concatenate 'string result-str header regs operators)))
-  
-;;;;Debug Environment preparing
-(defvar qreg (make-qregister 2 "q"))
-(defvar creg (make-cregister 2 "c"))
-(defvar qc (make-qcircuit qreg creg))
-(hgate qc 0)
-(xgate qc 1)
-(ygate qc 0)
-(zgate qc 1)
-(measure qc 0 1)
 
-(defun generate-openqasm-file (file-path)
+(defun create-openqasm-file (file-path)
   (with-open-file (stream file-path
                           :direction :output
                           :if-exists :supersede
                           :if-does-not-exist :create)
-    (format stream (get-openqasm qc ""))))
+    (format stream (create-openqasm qc ""))))
+  
+;;;;Debug Environment preparing
+;;(defvar qreg (make-qregister 2 "q"))
+;;(defvar creg (make-cregister 2 "c"))
+;;(defvar qc (make-qcircuit qreg creg))
+;;(hgate qc 0)
+;;(xgate qc 1)
+;;(ygate qc 0)
+;;(zgate qc 1)
+;;(measure qc 0 1)
+
+
 
 
 
