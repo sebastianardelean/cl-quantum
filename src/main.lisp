@@ -3,7 +3,7 @@
 (in-package :cl-quantum)
 
 
-(defclass qcircuit ()
+(defclass qcirc ()
   (
    (number-of-qubits :accessor number-of-qubits :initarg :number-of-qubits)
    (number-of-bits   :accessor number-of-bits   :initarg :number-of-bits)
@@ -11,50 +11,46 @@
   ))
 
 
-(defun make-qcircuit (number-of-qubits number-of-bits)
-  (make-instance 'qcircuit :number-of-qubits number-of-qubits :number-of-bits number-of-bits :gates '()))
+(defun make-qcirc (number-of-qubits number-of-bits)
+  (make-instance 'qcirc :number-of-qubits number-of-qubits :number-of-bits number-of-bits :gates '()))
 
 
-(defconstant HGATE 1)
-(defconstant XGATE 2)
-(defconstant YGATE 3)
-(defconstant ZGATE 4)
-(defconstant CNOTGATE 5)
-(defconstant INVALID -1)
-
+(defconstant +HGATE+ 1)
+(defconstant +XGATE+ 2)
+(defconstant +YGATE+ 3)
+(defconstant +ZGATE+ 4)
+(defconstant +CNOTGATE+ 5)
 
 
 
-;;(defmethod (setf gates) (new-val (obj qcircuit))   
-;;    (setf (slot-value obj 'gates) new-val))
 
 
 
 (defun h-gate (circuit q)
   (let ((x (gates circuit))
         (qubits (number-of-qubits circuit)))
-    (if (> qubits q) (setf (gates circuit) (push (list HGATE q -1) x)) (format t "error"))))
+    (if (> qubits q) (setf (gates circuit) (push (list +HGATE+ q -1) x)) (format t "error"))))
         
 (defun z-gate (circuit q)
   (let ((x (gates circuit))
         (qubits (number-of-qubits circuit)))
-    (if (> qubits q) (setf (gates circuit) (push (list ZGATE q -1) x)) (format t "error"))))
+    (if (> qubits q) (setf (gates circuit) (push (list +ZGATE+ q -1) x)) (format t "error"))))
 
 (defun x-gate (circuit q)
   (let ((x (gates circuit))
         (qubits (number-of-qubits circuit)))
-    (if (> qubits q) (setf (gates circuit) (push (list XGATE q -1) x)) (format t "error"))))
+    (if (> qubits q) (setf (gates circuit) (push (list +XGATE+ q -1) x)) (format t "error"))))
 
 (defun y-gate (circuit q)
   (let ((x (gates circuit))
         (qubits (number-of-qubits circuit)))
-    (if (> qubits q) (setf (gates circuit) (push (list YGATE q -1) x)) (format t "error"))))
+    (if (> qubits q) (setf (gates circuit) (push (list +YGATE+ q -1) x)) (format t "error"))))
 
 
 (defun cnot-gate (circuit ctrl targ)
   (let ((x (gates circuit))
         (qubits (number-of-qubits circuit)))
-    (if (and (> qubits targ) (> qubits ctrl) (/= ctrl targ)) (setf (gates circuit) (push (list CNOTGATE ctrl targ) x)) (format t "error"))))
+    (if (and (> qubits targ) (> qubits ctrl) (/= ctrl targ)) (setf (gates circuit) (push (list +CNOTGATE+ ctrl targ) x)) (format t "error"))))
 
 
 
@@ -144,17 +140,64 @@
 
 
 ;;;;;QCircuit Class
-(defclass qcircuit2 ()
+(defclass qcircuit ()
   ((qreg :accessor qreg :initarg :qreg)
    (creg :accessor creg :initarg :creg)
    (gates :accessor gates :initarg :gates)))
 
-(defun make-qcircuit2 (qreg creg)
-  (make-instance 'qcircuit2 :qreg qreg :creg creg :gates '()))
+(defun make-qcircuit (qreg creg)
+  (make-instance 'qcircuit :qreg qreg :creg creg :gates '()))
 
-(defmethod print-object ((obj qcircuit2) stream)
+(defmethod print-object ((obj qcircuit) stream)
   (print-unreadable-object (obj stream :type t)
     (format stream "qreg: ~a, creg: ~a, gates: ~a" (qreg obj) (creg obj) (gates obj))))
+
+
+(defmethod hgate ((obj qcircuit) ctrl)
+  (if (> (qubits (qreg obj)) ctrl) 
+      (let ((hobj (make-qgate ctrl -1 "hadamard"))
+            (gate-list (gates obj)))
+        (setf (gates obj) (push hobj gate-list))) (format t "error")))
+        
+
+(defmethod xgate ((obj qcircuit) ctrl)
+  (if (> (qubits (qreg obj)) ctrl) 
+      (let ((hobj (make-qgate ctrl -1 "pauli-x"))
+            (gate-list (gates obj)))
+        (setf (gates obj) (push hobj gate-list))) (format t "error")))
+
+(defmethod ygate ((obj qcircuit) ctrl)
+  (if (> (qubits (qreg obj)) ctrl) 
+      (let ((hobj (make-qgate ctrl -1 "pauli-y"))
+            (gate-list (gates obj)))
+        (setf (gates obj) (push hobj gate-list))) (format t "error")))
+
+(defmethod zgate ((obj qcircuit) ctrl)
+  (if (> (qubits (qreg obj)) ctrl) 
+      (let ((hobj (make-qgate ctrl -1 "pauli-z"))
+            (gate-list (gates obj)))
+        (setf (gates obj) (push hobj gate-list))) (format t "error")))
+
+(defmethod cnotgate ((obj qcircuit) ctrl targ)
+  (if (and (> (qubits (qreg obj)) ctrl) (> (qubits (qreg obj)) targ) (/= ctrl targ))
+      (let ((hobj (make-qgate ctrl targ "cnot"))
+            (gate-list (gates obj)))
+        (setf (gates obj) (push hobj gate-list))) (format t "error")))
+
+(defmethod measure ((obj qcircuit))
+  (let ((mobj (make-qgate -1 -1 "measure"))
+        (gate-list (gates obj)))
+    (setf (gates obj) (push mobj gate-list))))
+
+;;;;Debug Environment preparing
+(defvar qreg (make-qregister 2 "qreg"))
+(defvar creg (make-cregister 2 "creg"))
+(defvar qc (make-qcircuit qreg creg))
+(hgate qc 0)
+(xgate qc 1)
+(ygate qc 0)
+(zgate qc 1)
+(measure qc)
 
 (defun generate-qasm (circuit &optional result-string)
   result-string)
