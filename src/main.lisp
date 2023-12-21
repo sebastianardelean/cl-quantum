@@ -187,13 +187,20 @@ VERSION HISTORY
 
 (defmethod validate-gate-parameters ((obj qcircuit) ctrl targ)
   (if (> (qubits (qreg obj)) ctrl)
-      (if (or (> (qubits (qreg obj)) targ) (> (bits (creg obj)) targ))
+      (if (> (qubits (qreg obj)) targ) 
           (if (/= ctrl targ)
               T
               (progn (format t "Target and Control qubits are the same") nil))
           (progn (format t "Target qubit is out of range") nil))
       (progn (format t "Control qubit is out of range") nil)))
-      
+
+(defmethod validate-measure-parameters ((obj qcircuit) ctrl targ)
+  (if (> (qubits (qreg obj)) ctrl)
+      (if (> (bits (creg obj)) targ)
+              T
+          (progn (format t "Target qubit is out of range") nil))
+      (progn (format t "Control qubit is out of range") nil)))
+
 (defmethod add-gate ((qc qcircuit) ctrl targ gaten qgfmt meas)
   (let ((gate-list (gates qc))
         (qg (make-qgate ctrl targ gaten qgfmt meas)))
@@ -360,7 +367,7 @@ VERSION HISTORY
   - ctrl: the qubit's index in the quantum circuit.
   - targ: the bit's index in the classical circuit.
   "
-  (if (validate-gate-parameters obj ctrl targ)
+  (if (validate-measure-parameters obj ctrl targ)
       (add-gate obj ctrl targ "measure" "measure ~a[~a] -> ~a[~a];~%" t)
       (format t "error")))
 
