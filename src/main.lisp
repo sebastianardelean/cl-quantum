@@ -28,7 +28,7 @@ VERSION HISTORY
 * Dec 12, 2023 (sebastian ardelean): Finished the implementation on quantum circuits and H, X, Y, Z, and CNOT gate.
 
 * Dec 13, 2023 (sebastian ardelean): Finished the implementation of functions that generate the OpenQASM code; Added documentation.
-* Dec 21, 2023 (sebastian ardelean): Refactored gate methods and added S,St,T,Tt gates.
+* Dec 21, 2023 (sebastian ardelean): Refactored gate methods and added S,St,T,Tt gates. Removed gate IDs and modified the methods to validate and create a quantum gate.
 |#
 
 (defpackage cl-quantum
@@ -67,25 +67,6 @@ VERSION HISTORY
            #:create-openqasm-file))
 
 (in-package :cl-quantum)
-
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Constants defined for Quantum Gate IDs
-
-(defconstant +HGATE+    1  "Hadamard gate id used internally.")
-(defconstant +XGATE+    2  "Pauli-X gate id used internally.")
-(defconstant +YGATE+    3  "Pauli-Y gate id used internally.")
-(defconstant +ZGATE+    4  "Pauli-Z gate id used internally.")
-(defconstant +CNOTGATE+ 5  "Controlled-Not gate id used internally.")
-(defconstant +IDENTITY+ 6  "Identity gate id is used internally.")
-(defconstant +SGATE+    7  "SQRT(Z) gate id is used internally.")
-(defconstant +SDGGATE+  8  "Conjugate of SQRT(Z) gate id is used internally.")
-(defconstant +TGATE+    9  "T Gate id used internally.")
-(defconstant +TDGGATE+  10 "Conjugate of SQRT(S) gate id is used internally.")
-(defconstant +CZGATE+   11 "Controlled-Z gate id is used internally.")
-(defconstant +CYGATE+   12 "Controlled-Y gate id is used internally.")
-(defconstant +CHGATE+   13 "Controlled-H gate is is used internally.")
-(defconstant +MEASURE+  30 "Measurement operator id used internally.")
 
 
 
@@ -151,26 +132,29 @@ VERSION HISTORY
    ;; Name of the gate
    (name     :accessor name     :initarg :name
              :documentation "Name of the quantum gate.")
+   ;; Format of the generated OpenQASM v2.0 code
    (fmt      :accessor fmt      :initarg :fmt
-             :documentation "Format of the generated OpenQASM code")
-   ;; ID of the gate (see the constants defined above)
-   (gateid   :accessor gateid   :initarg :gateid
-             :documentation "ID of the quantum gate.")))
+             :documentation "Format of the generated OpenQASM v2.0 code")
+   ;; Is the gate a measurement operator?
+   (mop      :accessor mop      :initarg :mop
+             :documentation "True only if the gate is a measurement operator")))
 
-(defun make-qgate (control target name fmt id)
+
+(defun make-qgate (control target name qgfmt meas)
   "Constructor for the Quantum Gate.
 
   Parameters:
   - control: index of the control qubit.
   - target : index of the target qubit.
   - name   : name of the quantum gate.
-  - id     : id of the quantum gate.
+  - qgfmt  : format of the generate OpenQASM v2.0 code
+  - meas   : true if the operator is for measurement
   "
-  (make-instance 'qgate :controls control :target target :name name :gateid id))
+  (make-instance 'qgate :controls control :target target :name name :fmt qgfmt :mop meas))
 
 (defmethod print-object ((obj qgate) stream)
   (print-unreadable-object (obj stream :type t)
-    (format stream "controls ~a, target: ~a, name: ~a, id: ~a" (controls obj) (target obj) (name obj) (gateid obj))))
+    (format stream "controls ~a, target: ~a, name: ~a, format: ~a, measure: ~a" (controls obj) (target obj) (name obj) (fmt obj) (mop obj))))
 
 
 
@@ -210,9 +194,9 @@ VERSION HISTORY
           (progn (format t "Target qubit is out of range") nil))
       (progn (format t "Control qubit is out of range") nil)))
       
-(defmethod add-gate ((qc qcircuit) ctrl targ gaten gateid)
+(defmethod add-gate ((qc qcircuit) ctrl targ gaten qgfmt meas)
   (let ((gate-list (gates qc))
-        (qg (make-qgate ctrl targ gaten gateid)))
+        (qg (make-qgate ctrl targ gaten qgfmt meas)))
     (setf (gates qc) (push qg gate-list))))
 
 (defmethod hgate ((obj qcircuit) ctrl)
@@ -223,7 +207,7 @@ VERSION HISTORY
   - ctrl: the qubit's index in the quantum circuit on which the gate is applied.
   "
   (if (validate-gate-parameters obj ctrl -1)
-      (add-gate obj ctrl -1 "hadamard" +HGATE+)
+      (add-gate obj ctrl -1 "hadamard" "h ~a[~a];~%" nil)
       (format t "error")))
         
 
@@ -235,7 +219,7 @@ VERSION HISTORY
   - ctrl: the qubit's index in the quantum circuit on which the gate is applied.
   "
   (if (validate-gate-parameters obj ctrl -1)
-      (add-gate obj ctrl -1 "pauli-x" +XGATE+)
+      (add-gate obj ctrl -1 "pauli-x" "x ~a[~a];~%" nil)
       (format t "error")))
 
 (defmethod ygate ((obj qcircuit) ctrl)
@@ -246,7 +230,7 @@ VERSION HISTORY
   - ctrl: the qubit's index in the quantum circuit on which the gate is applied.
   "
   (if (validate-gate-parameters obj ctrl -1)
-      (add-gate obj ctrl -1 "pauli-y" +YGATE+)
+      (add-gate obj ctrl -1 "pauli-y" "y ~a[~a];~%" nil)
       (format t "error")))
 
 (defmethod zgate ((obj qcircuit) ctrl)
@@ -257,7 +241,7 @@ VERSION HISTORY
   - ctrl: the qubit's index in the quantum circuit on which the gate is applied.
   "
   (if (validate-gate-parameters obj ctrl -1)
-      (add-gate obj ctrl -1 "pauli-y" +ZGATE+)
+      (add-gate obj ctrl -1 "pauli-y" "z ~a[~a];~%" nil)
       (format t "error")))
 
 (defmethod idgate ((obj qcircuit) ctrl)
@@ -268,7 +252,7 @@ VERSION HISTORY
   - ctrl: the qubit's index in the quantum circuit on which the gate is applied.
   "
   (if (validate-gate-parameters obj ctrl -1)
-      (add-gate obj ctrl -1 "identity" +IDENTITY+)
+      (add-gate obj ctrl -1 "identity" "id ~a[~a];~%" nil)
       (format t "error")))
 
 (defmethod sgate ((obj qcircuit) ctrl)
@@ -279,7 +263,7 @@ VERSION HISTORY
   - ctrl: the qubit's index in the quantum circuit on which the gate is applied.
   "
   (if (validate-gate-parameters obj ctrl -1)
-      (add-gate obj ctrl -1 "sqrt(Z)" +SGATE+)
+      (add-gate obj ctrl -1 "sqrt(Z)" "s ~a[~a];~%" nil)
       (format t "error")))
 
 
@@ -291,7 +275,7 @@ VERSION HISTORY
   - ctrl: the qubit's index in the quantum circuit on which the gate is applied.
   "
   (if (validate-gate-parameters obj ctrl -1)
-      (add-gate obj ctrl -1 "conjugate sqrt(Z)" +SDGGATE+)
+      (add-gate obj ctrl -1 "conjugate sqrt(Z)" "sdg ~a[~a];~%" nil)
       (format t "error")))
 
 (defmethod tgate ((obj qcircuit) ctrl)
@@ -302,7 +286,7 @@ VERSION HISTORY
   - ctrl: the qubit's index in the quantum circuit on which the gate is applied.
   "
   (if (validate-gate-parameters obj ctrl -1)
-      (add-gate obj ctrl -1 "sqrt(S)" +TGATE+)
+      (add-gate obj ctrl -1 "sqrt(S)" "t ~a[~a];~%" nil)
       (format t "error")))
 
 
@@ -314,7 +298,7 @@ VERSION HISTORY
   - ctrl: the qubit's index in the quantum circuit on which the gate is applied.
   "
   (if (validate-gate-parameters obj ctrl -1)
-      (add-gate obj ctrl -1 "conjugate sqrt(S)" +TDGGATE+)
+      (add-gate obj ctrl -1 "conjugate sqrt(S)" "tdg ~a[~a];~%" nil)
       (format t "error")))
 
 
@@ -327,7 +311,7 @@ VERSION HISTORY
   - targ: the target qubit's index in the quantum circuit.
   "
   (if (validate-gate-parameters obj ctrl targ)
-      (add-gate obj ctrl targ "cnot" +CNOTGATE+)
+      (add-gate obj ctrl targ "cnot" "cx ~a[~a], ~a[~a];~%" nil)
       (format t "error")))
 
 
@@ -340,7 +324,7 @@ VERSION HISTORY
   - targ: the target qubit's index in the quantum circuit.
   "
   (if (validate-gate-parameters obj ctrl targ)
-      (add-gate obj ctrl targ "cz" +CZGATE+)
+      (add-gate obj ctrl targ "cz" "cz ~a[~a], ~a[~a];~%" nil)
       (format t "error")))
 
 (defmethod cygate ((obj qcircuit) ctrl targ)
@@ -352,7 +336,7 @@ VERSION HISTORY
   - targ: the target qubit's index in the quantum circuit.
   "
   (if (validate-gate-parameters obj ctrl targ)
-      (add-gate obj ctrl targ "cy" +CYGATE+)
+      (add-gate obj ctrl targ "cy" "cy ~a[~a], ~a[~a];~%" nil)
       (format t "error")))
 
 
@@ -365,7 +349,7 @@ VERSION HISTORY
   - targ: the target qubit's index in the quantum circuit.
   "
   (if (validate-gate-parameters obj ctrl targ)
-      (add-gate obj ctrl targ "ch" +CHGATE+)
+      (add-gate obj ctrl targ "ch" "ch ~a[~a], ~a[~a];~%" nil)
       (format t "error")))
 
 (defmethod measure ((obj qcircuit) ctrl targ)
@@ -376,8 +360,8 @@ VERSION HISTORY
   - ctrl: the qubit's index in the quantum circuit.
   - targ: the bit's index in the classical circuit.
   "
-  (if (validate-gate-parameters obj ctrl -1)
-      (add-gate obj ctrl targ "measure" +MEASURE+)
+  (if (validate-gate-parameters obj ctrl targ)
+      (add-gate obj ctrl targ "measure" "measure ~a[~a] -> ~a[~a];~%" t)
       (format t "error")))
 
 
@@ -392,23 +376,12 @@ VERSION HISTORY
   "
   (let ((ctrl (controls gate))
         (targ (target gate))
-        (gid  (gateid gate)))
-    (cond
-      ((= gid 1) (format nil "h ~a[~a];~%" qregname ctrl))
-      ((= gid 2) (format nil "x ~a[~a];~%" qregname ctrl))
-      ((= gid 3) (format nil "y ~a[~a];~%" qregname ctrl))
-      ((= gid 4) (format nil "z ~a[~a];~%" qregname ctrl))
-      ((= gid 5) (format nil "cx ~a[~a], ~a[~a];~%" qregname ctrl qregname targ))
-      ((= gid 6) (format nil "id ~a[~a];~%" qregname ctrl))
-      ((= gid 7) (format nil "s ~a[~a];~%" qregname ctrl))
-      ((= gid 8) (format nil "sdg ~a[~a];~%" qregname ctrl))
-      ((= gid 9) (format nil "t ~a[~a];~%" qregname ctrl))
-      ((= gid 10) (format nil "tdg ~a[~a];~%" qregname ctrl))
-      ((= gid 11) (format nil "cz ~a[~a], ~a[~a];~%" qregname ctrl qregname targ))
-      ((= gid 12) (format nil "cy ~a[~a], ~a[~a];~%" qregname ctrl qregname targ))
-      ((= gid 13) (format nil "ch ~a[~a], ~a[~a];~%" qregname ctrl qregname targ))
-      ((= gid 30) (format nil "measure ~a[~a] -> ~a[~a];~%" qregname ctrl cregname targ)))))
-    
+        (qgfmt (fmt gate))
+        (meas (mop gate)))
+    (if meas
+        (format nil qgfmt qregname ctrl cregname targ)
+        (format nil qgfmt qregname ctrl qregname targ))))
+
 
 (defun get-operators (xs qregname cregname &optional result-str)
   " Generates the list of OpenQASM v2.0 quantum gate's intructions.
@@ -451,13 +424,20 @@ VERSION HISTORY
                           :if-does-not-exist :create)
     (format stream (create-openqasm qc ""))))
   
-  (defvar qreg (make-qregister 2 "q"))
-  (defvar creg (make-cregister 2 "c"))
-  (defvar qc (make-qcircuit qreg creg))
-  (hgate qc 0)
-  (xgate qc 1)
-  (ygate qc 0)
-  (zgate qc 1)
-  (cnotgate qc 0 1)
-  (measure qc 0 1)
+(defvar qreg (make-qregister 2 "q"))
+(defvar creg (make-cregister 2 "c"))
+(defvar qc (make-qcircuit qreg creg))
+(hgate qc 0)
+(xgate qc 1)
+(ygate qc 0)
+(zgate qc 1)
+(cnotgate qc 0 1)
+(sgate qc 0)
+(sdggate qc 1)
+(tgate qc 0)
+(tdggate qc 1)
+(czgate qc 0 1)
+(cygate qc 1 0)
+(chgate qc 0 1)
+(measure qc 0 1)
 
