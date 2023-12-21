@@ -4,17 +4,7 @@
 (in-package :cl-quantum/example/main)
 
 
-(defconstant +QREG+ (make-qregister 2 "q"))
-(defconstant +CREG+ (make-cregister 1 "c"))
-(defconstant +QC2+   (make-qcircuit +QREG+ +CREG+))
-
-;; Initialize
-
-(defun initialize-circuit ()
-  (progn
-    (xgate +QC2+ 1)
-    (hgate +QC2+ 0)
-    (hgate +QC2+ 1)))
+;; Deutsch-Josza Algrithm Implementation
 
 ;; Oracle f(x) = 0
 (defun oracle-f1 ()
@@ -22,28 +12,30 @@
 
 ;; Oracle f(x) = 1
 
-(defun oracle-f2 ()
-  (xgate +QC2+ 1))
+(defun oracle-f2 (qc)
+  (xgate qc 1))
 
 ;; Oracle f(x) = x
-(defun oracle-f3 ()
-  (cnotgate +QC2+ 0 1))
+(defun oracle-f3 (qc)
+  (cnotgate qc 0 1))
 
 ;; Oracle f(x) = 1 - x
 
-(defun oracle-f4 ()
+(defun oracle-f4 (qc)
   (progn
-    (cnotgate +QC2+ 0 1)
-    (xgate +QC2+ 1)))
+    (cnotgate qc 0 1)
+    (xgate qc 1)))
 
-(defun measure-circuit ()
-  (progn
-    (hgate +QC2+ 0)
-    (measure +QC2+ 0 0)))
-           
+          
 (defun run ()
-  (progn
-    (initialize-circuit)
-    (oracle-f2)
-    (measure-circuit)
-    (create-openqasm +QC2+ "")))
+  (let ((qreg (make-qregister 2 "q"))
+        (creg (make-cregister 2 "c"))
+        (qc   (make-qcircuit qreg creg)))
+    (progn
+      (xgate qc 1)
+      (hgate qc 0)
+      (hgate qc 1)
+      (oracle-f2 qc)
+      (hgate qc 0)
+      (measure qc 0 0)
+      (create-openqasm qc ""))))
