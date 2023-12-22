@@ -37,7 +37,50 @@ measure q[0] -> c[1]
 
 To save the generated code in a file, the function `(defun create-openqasm-file (qc file-path)` must be called.
 
+### Example of Deutsch-Josza's algorithm implementation:
+
+```
+;; Deutsch-Josza Algrithm Implementation
+
+;; Oracle f(x) = 0
+(defun oracle-f1 ()
+  )
+
+;; Oracle f(x) = 1
+
+(defun oracle-f2 (qc)
+  (cl-quantum:xgate qc 1))
+
+;; Oracle f(x) = x
+(defun oracle-f3 (qc)
+  (cl-quantum:cnotgate qc 0 1))
+
+;; Oracle f(x) = 1 - x
+
+(defun oracle-f4 (qc)
+  (progn
+    (cl-quantum:cnotgate qc 0 1)
+    (cl-quantum:xgate qc 1)))
+
+
+(defconstant  +QREG+ (cl-quantum:make-qregister 2 "q"))
+(defconstant  +CREG+ (cl-quantum:make-cregister 1 "c"))
+
+(defun run ()
+  (let ((qc   (cl-quantum:make-qcircuit +QREG+ +CREG+)))
+    (progn
+      (cl-quantum:xgate qc 1)
+      (cl-quantum:hgate qc 0)
+      (cl-quantum:hgate qc 1)
+      (oracle-f2 qc)
+      (cl-quantum:hgate qc 0)
+      (cl-quantum:measure qc 0 0)
+      (cl-quantum:create-openqasm qc ""))))
+```
+
 ## Installation
+
+In your new project add the package as a dependency or in REPL run `(ql:quickload "cl-quantum")`.
 
 ## Author
 
