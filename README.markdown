@@ -37,10 +37,10 @@ measure q[0] -> c[1]
 
 To save the generated code in a file, the function `(defun create-openqasm-file (qc file-path)` must be called.
 
-### Example of Deutsch-Josza's algorithm implementation:
+### Example of Deutsch-Jozsa's algorithm implementation:
 
 ```
-;; Deutsch-Josza Algrithm Implementation
+;; Deutsch-Jozsa Algrithm Implementation
 
 ;; Oracle f(x) = 0
 (defun oracle-f1 ()
