@@ -123,9 +123,16 @@ VERSION HISTORY
 ;; Class definition for Quantum Gate
 
 (defclass qgate ()
-  (;; Index of control qubit
+  (
+   ;; Control register name
+   (ctrlregname :accessor ctrlregname :initarg :ctrlregname
+                :documentation "Control register name")
+    ;; Index of control qubit
    (controls :accessor controls :initarg :controls
              :documentation "Index of the control qubit.")
+   ;; Target register name
+   (targregname :accessor targregname :initarg :targregname
+                :documentation "Target register name")
    ;; Index of target qubit
    (target   :accessor target   :initarg :target
              :documentation "Index of the target qubit.")
@@ -140,21 +147,28 @@ VERSION HISTORY
              :documentation "True only if the gate is a measurement operator")))
 
 
-(defun make-qgate (control target name qgfmt meas)
+(defun make-qgate (ctrlregname control targregname target name qgfmt meas)
   "Constructor for the Quantum Gate.
 
   Parameters:
-  - control: index of the control qubit.
-  - target : index of the target qubit.
-  - name   : name of the quantum gate.
-  - qgfmt  : format of the generate OpenQASM v2.0 code
-  - meas   : true if the operator is for measurement
+  - ctrlregname: control register name.
+  - control    : index of the control qubit.
+  - targregname: target register name.
+  - target     : index of the target qubit.
+  - name       : name of the quantum gate.
+  - qgfmt      : format of the generate OpenQASM v2.0 code
+  - meas       : true if the operator is for measurement
   "
-  (make-instance 'qgate :controls control :target target :name name :fmt qgfmt :mop meas))
+  (make-instance 'qgate :ctrlregname ctrlregname
+                        :controls control
+                        :targregname targregname 
+                        :target target
+                        :name name :fmt qgfmt :mop meas))
 
 (defmethod print-object ((obj qgate) stream)
   (print-unreadable-object (obj stream :type t)
-    (format stream "controls ~a, target: ~a, name: ~a, format: ~a, measure: ~a" (controls obj) (target obj) (name obj) (fmt obj) (mop obj))))
+    (format stream "ctrlregname: ~a, controls ~a, targregname: ~a, target: ~a, name: ~a, format: ~a, measure: ~a"
+            (ctrlregname obj) (controls obj) (targregname obj) (target obj) (name obj) (fmt obj) (mop obj))))
 
 
 
@@ -163,10 +177,10 @@ VERSION HISTORY
 (defclass qcircuit ()
   (;; Quantum Register
    (qreg :accessor qreg :initarg :qreg
-         :documentation "Quantum Register.")
+         :documentation "Quantum Registers.")
    ;; Classical Register
    (creg :accessor creg :initarg :creg
-         :documentation "Classical Register.")
+         :documentation "Classical Registers.")
    ;; List of applied quantum gates
    (gates :accessor gates :initarg :gates
           :documentation "List of applied quantum gates.")))
