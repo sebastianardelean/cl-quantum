@@ -193,18 +193,15 @@ VERSION HISTORY
 (defclass qcircuit ()
   (;; List of Quantum Register
    (qreg :accessor qreg :initarg :qreg
-
          :documentation "Quantum Registers.")
    ;; List of Classical Register
-
-
    (creg :accessor creg :initarg :creg
-         :documentation "List of Classical Registers.")
+         :documentation "Classical Registers.")
    ;; List of applied quantum gates
    (gates :accessor gates :initarg :gates
           :documentation "List of applied quantum gates.")))
 
-(defun make-qcircuit (qregs cregs)
+(defun make-qcircuit (qreg creg)
   "Constructor for the Quantum Circuit.
 
   Parameters:
@@ -218,11 +215,7 @@ VERSION HISTORY
     (format stream "qreg: ~a, creg: ~a, gates: ~a" (qreg obj) (creg obj) (gates obj))))
 
 
-(defmethod validate-gate-parameters ((obj qcircuit) (objg qgate))
-  (let ((cregname (ctrlregname objg))
-        (tregname (targregname objg))
-
-
+(defmethod validate-gate-parameters ((obj qcircuit) ctrl targ)
   (if (> (qubits (qreg obj)) ctrl)
       (if (> (qubits (qreg obj)) targ) 
           (if (/= ctrl targ)
@@ -254,37 +247,27 @@ VERSION HISTORY
           (progn (format t "Target qubit is out of range") nil))
       (progn (format t "Control qubit is out of range") nil)))
 
-
 (defmethod add-gate ((qc qcircuit) (qg qgate))
   (let ((gate-list (gates qc)))
     (setf (gates qc) (push qg gate-list))))
 
 
 (defmethod hgate ((obj qcircuit) (ctrlreg qregister) ctrl)
-
-(defmethod add-gate ((qc qcircuit) cregname ctrl tregname targ gaten qgfmt meas)
-  (let ((gate-list (gates qc))
-        (qg (make-qgate cregname ctrl tregname targ gaten qgfmt meas)))
-    (setf (gates qc) (push qg gate-list))))
-
-(defmethod hgate ((obj qcircuit) cregname ctrl)
-
   " Create and apply a Hadamard gate on qubit ctrl.
 
   Parameters:
   - obj: the quantum circuit on which the quantum gate is applied.
   - ctrl: the qubit's index in the quantum circuit on which the gate is applied.
   "
-
   (let ((qg (make-qgate ctrl -1 "hadamard" "h ~a[~a];~%" nil)))
     (if (validate-gate-parameters obj qg)
         (add-gate obj qg)
         (format t "error"))))
         
 
+        
 
-
-(defmethod xgate ((obj qcircuit) cregname ctrl)
+(defmethod xgate ((obj qcircuit) ctrl)
   " Create and apply a Pauli-X gate on qubit ctrl.
 
   Parameters:
@@ -292,10 +275,10 @@ VERSION HISTORY
   - ctrl: the qubit's index in the quantum circuit on which the gate is applied.
   "
   (if (validate-gate-parameters obj ctrl -1)
-      (add-gate obj cregname ctrl "" -1 "pauli-x" "x ~a[~a];~%" nil)
+      (add-gate obj ctrl -1 "pauli-x" "x ~a[~a];~%" nil)
       (format t "error")))
 
-(defmethod ygate ((obj qcircuit) cregname ctrl)
+(defmethod ygate ((obj qcircuit) ctrl)
   " Create and apply a Pauli-Y gate on qubit ctrl.
 
   Parameters:
@@ -303,10 +286,10 @@ VERSION HISTORY
   - ctrl: the qubit's index in the quantum circuit on which the gate is applied.
   "
   (if (validate-gate-parameters obj ctrl -1)
-      (add-gate obj cregname ctrl "" -1 "pauli-y" "y ~a[~a];~%" nil)
+      (add-gate obj ctrl -1 "pauli-y" "y ~a[~a];~%" nil)
       (format t "error")))
 
-(defmethod zgate ((obj qcircuit) cregname ctrl)
+(defmethod zgate ((obj qcircuit) ctrl)
   " Create and apply a Pauli-Z gate on qubit ctrl.
 
   Parameters:
@@ -314,10 +297,10 @@ VERSION HISTORY
   - ctrl: the qubit's index in the quantum circuit on which the gate is applied.
   "
   (if (validate-gate-parameters obj ctrl -1)
-      (add-gate obj cregname ctrl "" -1 "pauli-y" "z ~a[~a];~%" nil)
+      (add-gate obj ctrl -1 "pauli-y" "z ~a[~a];~%" nil)
       (format t "error")))
 
-(defmethod idgate ((obj qcircuit) cregname ctrl)
+(defmethod idgate ((obj qcircuit) ctrl)
   " Create and apply an Identity gate on qubit ctrl.
 
   Parameters:
@@ -325,10 +308,10 @@ VERSION HISTORY
   - ctrl: the qubit's index in the quantum circuit on which the gate is applied.
   "
   (if (validate-gate-parameters obj ctrl -1)
-      (add-gate obj cregname ctrl "" -1 "identity" "id ~a[~a];~%" nil)
+      (add-gate obj ctrl -1 "identity" "id ~a[~a];~%" nil)
       (format t "error")))
 
-(defmethod sgate ((obj qcircuit) cregname ctrl)
+(defmethod sgate ((obj qcircuit) ctrl)
   " Create and apply a SQRT(Z) gate on qubit ctrl.
 
   Parameters:
@@ -336,11 +319,11 @@ VERSION HISTORY
   - ctrl: the qubit's index in the quantum circuit on which the gate is applied.
   "
   (if (validate-gate-parameters obj ctrl -1)
-      (add-gate obj cregname ctrl "" -1 "sqrt(Z)" "s ~a[~a];~%" nil)
+      (add-gate obj ctrl -1 "sqrt(Z)" "s ~a[~a];~%" nil)
       (format t "error")))
 
 
-(defmethod sdggate ((obj qcircuit) cregname ctrl)
+(defmethod sdggate ((obj qcircuit) ctrl)
   " Create and apply a Conjugate of SQRT(Z) gate on qubit ctrl.
 
   Parameters:
@@ -348,10 +331,10 @@ VERSION HISTORY
   - ctrl: the qubit's index in the quantum circuit on which the gate is applied.
   "
   (if (validate-gate-parameters obj ctrl -1)
-      (add-gate obj cregname ctrl "" -1 "conjugate sqrt(Z)" "sdg ~a[~a];~%" nil)
+      (add-gate obj ctrl -1 "conjugate sqrt(Z)" "sdg ~a[~a];~%" nil)
       (format t "error")))
 
-(defmethod tgate ((obj qcircuit) cregname ctrl)
+(defmethod tgate ((obj qcircuit) ctrl)
   " Create and apply a SQRT(S) gate on qubit ctrl.
 
   Parameters:
@@ -359,11 +342,11 @@ VERSION HISTORY
   - ctrl: the qubit's index in the quantum circuit on which the gate is applied.
   "
   (if (validate-gate-parameters obj ctrl -1)
-      (add-gate obj cregname ctrl "" -1 "sqrt(S)" "t ~a[~a];~%" nil)
+      (add-gate obj ctrl -1 "sqrt(S)" "t ~a[~a];~%" nil)
       (format t "error")))
 
 
-(defmethod tdggate ((obj qcircuit) cregname ctrl)
+(defmethod tdggate ((obj qcircuit) ctrl)
   " Create and apply a Conjugate of SQRT(S) gate on qubit ctrl.
 
   Parameters:
@@ -371,11 +354,11 @@ VERSION HISTORY
   - ctrl: the qubit's index in the quantum circuit on which the gate is applied.
   "
   (if (validate-gate-parameters obj ctrl -1)
-      (add-gate obj cregname ctrl "" -1 "conjugate sqrt(S)" "tdg ~a[~a];~%" nil)
+      (add-gate obj ctrl -1 "conjugate sqrt(S)" "tdg ~a[~a];~%" nil)
       (format t "error")))
 
 
-(defmethod cnotgate ((obj qcircuit) cregname ctrl tregname targ)
+(defmethod cnotgate ((obj qcircuit) ctrl targ)
   " Create and apply a Controlled Not gate.
 
   Parameters:
@@ -384,11 +367,11 @@ VERSION HISTORY
   - targ: the target qubit's index in the quantum circuit.
   "
   (if (validate-gate-parameters obj ctrl targ)
-      (add-gate obj cregname ctrl tregname targ "cnot" "cx ~a[~a], ~a[~a];~%" nil)
+      (add-gate obj ctrl targ "cnot" "cx ~a[~a], ~a[~a];~%" nil)
       (format t "error")))
 
 
-(defmethod czgate ((obj qcircuit) cregname ctrl tregname targ)
+(defmethod czgate ((obj qcircuit) ctrl targ)
   " Create and apply a Controlled-Z gate.
 
   Parameters:
@@ -397,10 +380,10 @@ VERSION HISTORY
   - targ: the target qubit's index in the quantum circuit.
   "
   (if (validate-gate-parameters obj ctrl targ)
-      (add-gate obj cregname ctrl tregname targ "cz" "cz ~a[~a], ~a[~a];~%" nil)
+      (add-gate obj ctrl targ "cz" "cz ~a[~a], ~a[~a];~%" nil)
       (format t "error")))
 
-(defmethod cygate ((obj qcircuit) cregname ctrl tregname targ)
+(defmethod cygate ((obj qcircuit) ctrl targ)
   " Create and apply a Controlled-Y gate.
 
   Parameters:
@@ -409,11 +392,11 @@ VERSION HISTORY
   - targ: the target qubit's index in the quantum circuit.
   "
   (if (validate-gate-parameters obj ctrl targ)
-      (add-gate obj cregname ctrl tregname targ "cy" "cy ~a[~a], ~a[~a];~%" nil)
+      (add-gate obj ctrl targ "cy" "cy ~a[~a], ~a[~a];~%" nil)
       (format t "error")))
 
 
-(defmethod chgate ((obj qcircuit) cregname ctrl tregname targ)
+(defmethod chgate ((obj qcircuit) ctrl targ)
   " Create and apply a Controlled-H gate.
 
   Parameters:
@@ -422,10 +405,10 @@ VERSION HISTORY
   - targ: the target qubit's index in the quantum circuit.
   "
   (if (validate-gate-parameters obj ctrl targ)
-      (add-gate obj cregname ctrl tregname targ "ch" "ch ~a[~a], ~a[~a];~%" nil)
+      (add-gate obj ctrl targ "ch" "ch ~a[~a], ~a[~a];~%" nil)
       (format t "error")))
 
-(defmethod measure ((obj qcircuit) cregname ctrl tregname targ)
+(defmethod measure ((obj qcircuit) ctrl targ)
   " Create and apply a Measurement operator.
 
   Parameters:
@@ -434,7 +417,7 @@ VERSION HISTORY
   - targ: the bit's index in the classical circuit.
   "
   (if (validate-measure-parameters obj ctrl targ)
-      (add-gate obj cregname ctrl tregname targ "measure" "measure ~a[~a] -> ~a[~a];~%" t)
+      (add-gate obj ctrl targ "measure" "measure ~a[~a] -> ~a[~a];~%" t)
       (format t "error")))
 
 
