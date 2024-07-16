@@ -81,6 +81,7 @@ VERSION HISTORY
    (name :accessor name :initarg :name
          :documentation "Quantum register name.")))
 
+
 (defun make-qregister (qubits name)
   "Constructor for the Quantum Register.
 
@@ -89,6 +90,13 @@ VERSION HISTORY
   - name: quantum register's name.
   "
   (make-instance 'qregister :qubits qubits :name name))
+
+(defgeneric qregister-equal (a b)
+  (:documentation "Compare two instances of qregister for equality."))
+
+(defmethod qregister-equal ((a qregister) (b qregister))
+  (and (equal (qubits a) (qubits b))
+       (equal (name a) (name b))))
 
 (defmethod print-object ((obj qregister) stream)
   (print-unreadable-object (obj stream :type t)
@@ -114,6 +122,14 @@ VERSION HISTORY
   "
   (make-instance 'cregister :bits bits :name name))
 
+
+(defgeneric cregister-equal (a b)
+  (:documentation "Compare two instances of cregister for equality."))
+
+(defmethod cregister-equal ((a cregister) (b cregister))
+  (and (equal (bits a) (bits b))
+       (equal (name a) (name b))))
+
 (defmethod print-object ((obj cregister) stream)
   (print-unreadable-object (obj stream :type t)
     (format stream "bits ~a, name: ~a" (bits obj) (name obj))))
@@ -124,15 +140,15 @@ VERSION HISTORY
 
 (defclass qgate ()
   (
-   ;; Control register name
+   ;; Control register
    (ctrlregname :accessor ctrlregname :initarg :ctrlregname
-                :documentation "Control register name")
+                :documentation "Control register")
     ;; Index of control qubit
    (controls :accessor controls :initarg :controls
              :documentation "Index of the control qubit.")
-   ;; Target register name
+   ;; Target register
    (targregname :accessor targregname :initarg :targregname
-                :documentation "Target register name")
+                :documentation "Target register")
    ;; Index of target qubit
    (target   :accessor target   :initarg :target
              :documentation "Index of the target qubit.")
@@ -175,10 +191,10 @@ VERSION HISTORY
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Class definition for Quantum Circuit
 (defclass qcircuit ()
-  (;; Quantum Register
+  (;; List of Quantum Register
    (qreg :accessor qreg :initarg :qreg
          :documentation "Quantum Registers.")
-   ;; Classical Register
+   ;; List of Classical Register
    (creg :accessor creg :initarg :creg
          :documentation "Classical Registers.")
    ;; List of applied quantum gates
@@ -189,8 +205,8 @@ VERSION HISTORY
   "Constructor for the Quantum Circuit.
 
   Parameters:
-  - qreg: quantum register.
-  - creg: classical register.
+  - qreg: list of quantum register.
+  - creg: list of classical register.
   "
   (make-instance 'qcircuit :qreg qreg :creg creg :gates '()))
 
@@ -208,28 +224,47 @@ VERSION HISTORY
           (progn (format t "Target qubit is out of range") nil))
       (progn (format t "Control qubit is out of range") nil)))
 
+
+(defmethod validate-gate-parameters ((obj qcircuit) (qg qgate))
+  (let ((ctrlreg (ctrlregname qg))
+        (targreg (targregname qg))
+        (ctrlq (controls qg))
+        (targq (target qg)))
+    (if (> (qubits (qreg obj)) (qubits ctrlreg))
+        (if (> (qubits (qreg obj)) (qubits targreg))
+            T
+            (format t "Target qubit is out of range"))
+        (format t "Control qubit is out of range"))))
+        
+    
+        
+  
+
 (defmethod validate-measure-parameters ((obj qcircuit) ctrl targ)
   (if (> (qubits (qreg obj)) ctrl)
       (if (> (bits (creg obj)) targ)
-              T
+          T
           (progn (format t "Target qubit is out of range") nil))
       (progn (format t "Control qubit is out of range") nil)))
 
-(defmethod add-gate ((qc qcircuit) ctrl targ gaten qgfmt meas)
-  (let ((gate-list (gates qc))
-        (qg (make-qgate ctrl targ gaten qgfmt meas)))
+(defmethod add-gate ((qc qcircuit) (qg qgate))
+  (let ((gate-list (gates qc)))
     (setf (gates qc) (push qg gate-list))))
 
-(defmethod hgate ((obj qcircuit) ctrl)
+
+(defmethod hgate ((obj qcircuit) (ctrlreg qregister) ctrl)
   " Create and apply a Hadamard gate on qubit ctrl.
 
   Parameters:
   - obj: the quantum circuit on which the quantum gate is applied.
   - ctrl: the qubit's index in the quantum circuit on which the gate is applied.
   "
-  (if (validate-gate-parameters obj ctrl -1)
-      (add-gate obj ctrl -1 "hadamard" "h ~a[~a];~%" nil)
-      (format t "error")))
+  (let ((qg (make-qgate ctrl -1 "hadamard" "h ~a[~a];~%" nil)))
+    (if (validate-gate-parameters obj qg)
+        (add-gate obj qg)
+        (format t "error"))))
+        
+
         
 
 (defmethod xgate ((obj qcircuit) ctrl)
