@@ -1,5 +1,5 @@
 (defsystem "cl-quantum"
-  :version "0.0.1"
+  :version "1.0.0"
   :author "Sebastian Ardelean"
   :license ""
   :depends-on ()
