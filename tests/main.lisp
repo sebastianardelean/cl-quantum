@@ -9,18 +9,18 @@
 (deftest test-create-qreg
   (testing "Creating qregister"
     (let ((reg (make-qregister 2 "q")))
-      (ok (= 2 (qubits reg))))))
+      (ok (= 2 (size reg))))))
 
 (deftest test-create-creg
   (testing "Creating cregister"
     (let ((reg (make-cregister 2 "c")))
-      (ok (= 2 (bits reg))))))
+      (ok (= 2 (size reg))))))
 
 (deftest test-create-qcircuit
   (testing "Creating circuit"
     (let ((creg (make-cregister 2 "c"))
           (qreg (make-qregister 2 "q"))
-          (qc   (make-qcircuit qreg creg)))
-      (ok (and (= 2 (qubits (qreg qc))) (= 2 (bits (creg qc))))))))
+          (qc   (make-qcircuit (list qreg) (list creg))))
+      (ok (and (= 2 (size (qregs qc))) (= 2 (size (cregs qc))))))))
 
 
