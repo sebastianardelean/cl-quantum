@@ -20,12 +20,12 @@
            #:xgate
            #:ygate
            #:zgate
-           #:idgate
+           #:igate
            #:sgate
            #:sdggate
            #:tgate
            #:tdggate
-           #:cnotgate
+           #:cxgate
            #:czgate
            #:cygate
            #:chgate
@@ -135,23 +135,218 @@
 
 
 
-(defmethod validate-gate-register ((qcregs qregister) (reg qregister))
-  (if qcreg
-      (let (qreg (find-if (lambda (x) (qregister-equal qreg x)) qcregs))
-        (if qreg
-            (if (> (size qcreg) (size reg))
-                T
-                (format t "The qubit position is out of range."))
-            (format t "Register not found in qcircuit.")))
-      (format t "QCircuit list of registers is NIL.")))
-              
+(defmethod validate-qregister ((qc qcircuit) (reg qregister))
+  (let ((qcregs (qregs qc)))
+    (if qcregs
+        (let ((qreg (find-if (lambda (x) (qregister-equal reg x)) qcregs)))
+          (if qreg
+              T
+              (format t "Register not found in the quantum circuit")))
+        (format t "Quantum circuit does not have any quantum registers"))))
 
 
+(defmethod validate-cregister ((qc qcircuit) (reg cregister))
+  (let ((qcregs (cregs qc)))
+    (if qcregs
+        (let ((creg (find-if (lambda (x) (cregister-equal reg x)) qcregs)))
+          (if creg
+              T
+              (format t "Register not found in the quantum circuit")))
+        (format t "Quantum circuit does not have any quantum registers"))))
 
-          
-                                     
-  (if (> (size (qregs qc)) (size reg)
+
 
 (defmethod hgate ((qc qcircuit) (reg qregister) position)
-  (let ((qg (make-qgate reg position nil -1 "hadamard" "h ~a[~a];~%" nil)))
-    (add-gate qc qg)))
+  (if (and (> (size reg) position) (validate-qregister qc reg))
+      (let ((qg (make-qgate reg position nil -1 "Hadamard" "h ~a[~a];~%" nil)))
+        (add-gate qc qg))
+      (format t "Qubit position or the register is not valid")))
+
+(defmethod xgate ((qc qcircuit) (reg qregister) position)
+  (if (and (> (size reg) position) (validate-qregister qc reg))
+      (let ((qg (make-qgate reg position nil -1 "Pauli-X" "x ~a[~a];~%" nil)))
+        (add-gate qc qg))
+      (format t "Qubit position or the register is not valid")))
+
+(defmethod ygate ((qc qcircuit) (reg qregister) position)
+  (if (and (> (size reg) position) (validate-qregister qc reg))
+      (let ((qg (make-qgate reg position nil -1 "Pauli-Y" "y ~a[~a];~%" nil)))
+        (add-gate qc qg))
+      (format t "Qubit position or the register is not valid")))
+
+(defmethod zgate ((qc qcircuit) (reg qregister) position)
+  (if (and (> (size reg) position) (validate-qregister qc reg))
+      (let ((qg (make-qgate reg position nil -1 "Pauli-Z" "z ~a[~a];~%" nil)))
+        (add-gate qc qg))
+      (format t "Qubit position or the register is not valid")))
+
+
+(defmethod igate ((qc qcircuit) (reg qregister) position)
+  (if (and (> (size reg) position) (validate-qregister qc reg))
+      (let ((qg (make-qgate reg position nil -1 "Identity" "i ~a[~a];~%" nil)))
+        (add-gate qc qg))
+      (format t "Qubit position or the register is not valid")))
+
+
+(defmethod sgate ((qc qcircuit) (reg qregister) position)
+  (if (and (> (size reg) position) (validate-qregister qc reg))
+      (let ((qg (make-qgate reg position nil -1 "SQRT(Z)" "s ~a[~a];~%" nil)))
+        (add-gate qc qg))
+      (format t "Qubit position or the register is not valid")))
+
+(defmethod sdggate ((qc qcircuit) (reg qregister) position)
+  (if (and (> (size reg) position) (validate-qregister qc reg))
+      (let ((qg (make-qgate reg position nil -1 "Conjugate SQRT(Z)" "sdg ~a[~a];~%" nil)))
+        (add-gate qc qg))
+      (format t "Qubit position or the register is not valid")))
+
+
+(defmethod tgate ((qc qcircuit) (reg qregister) position)
+  (if (and (> (size reg) position) (validate-qregister qc reg))
+      (let ((qg (make-qgate reg position nil -1 "SQRT(S)" "t ~a[~a];~%" nil)))
+        (add-gate qc qg))
+      (format t "Qubit position or the register is not valid")))
+
+(defmethod tdggate ((qc qcircuit) (reg qregister) position)
+  (if (and (> (size reg) position) (validate-qregister qc reg))
+      (let ((qg (make-qgate reg position nil -1 "Conjugate SQRT(S)" "tdg ~a[~a];~%" nil)))
+        (add-gate qc qg))
+      (format t "Qubit position or the register is not valid")))
+
+
+
+(defmethod cxgate ((qc qcircuit) (ctrl qregister) ctrlp (targ qregister) targp)
+  (if (and (> (size ctrl) ctrlp) (validate-qregister qc ctrl))
+      (if (and (> (size targ) targp) (validate-qregister qc targ))
+          (let ((qg (make-qgate ctrl ctrlp targ targp "CNOT" "cx ~a[~a], ~a[~a];~%" nil)))
+            (add-gate qc qg))
+          (format t "Qubit position or the target register is not valid!"))
+      (format t "Qubit position or the control register is not valid!")))
+
+
+(defmethod cygate ((qc qcircuit) (ctrl qregister) ctrlp (targ qregister) targp)
+  (if (and (> (size ctrl) ctrlp) (validate-qregister qc ctrl))
+      (if (and (> (size targ) targp) (validate-qregister qc targ))
+          (let ((qg (make-qgate ctrl ctrlp targ targp "CY" "cy ~a[~a], ~a[~a];~%" nil)))
+            (add-gate qc qg))
+          (format t "Qubit position or the target register is not valid!"))
+      (format t "Qubit position or the control register is not valid!")))
+
+
+
+(defmethod czgate ((qc qcircuit) (ctrl qregister) ctrlp (targ qregister) targp)
+  (if (and (> (size ctrl) ctrlp) (validate-qregister qc ctrl))
+      (if (and (> (size targ) targp) (validate-qregister qc targ))
+          (let ((qg (make-qgate ctrl ctrlp targ targp "CZ" "cz ~a[~a], ~a[~a];~%" nil)))
+            (add-gate qc qg))
+          (format t "Qubit position or the target register is not valid!"))
+      (format t "Qubit position or the control register is not valid!")))
+
+(defmethod chgate ((qc qcircuit) (ctrl qregister) ctrlp (targ qregister) targp)
+  (if (and (> (size ctrl) ctrlp) (validate-qregister qc ctrl))
+      (if (and (> (size targ) targp) (validate-qregister qc targ))
+          (let ((qg (make-qgate ctrl ctrlp targ targp "CH" "ch ~a[~a], ~a[~a];~%" nil)))
+            (add-gate qc qg))
+          (format t "Qubit position or the target register is not valid!"))
+      (format t "Qubit position or the control register is not valid!")))
+
+(defmethod measure ((qc qcircuit) (ctrl qregister) ctrlp (targ cregister) targp)
+  (if (and (> (size ctrl) ctrlp) (validate-qregister qc ctrl))
+      (if (and (> (size targ) targp) (validate-cregister qc targ))
+          (let ((qg (make-qgate ctrl ctrlp targ targp "Measurement" "measure ~a[~a] -> ~a[~a];~%" t)))
+            (add-gate qc qg))
+          (format t "Qubit position or the classical register is not valid!"))
+      (format t "Qubit position or the quantum register is not valid!")))
+
+
+
+
+(defun get-gate (gate)
+  " Generate the OpenQASM v2.0 quantum gate's instructions.
+
+  Parameters:
+  - gate: the quantum gate object.
+  "
+
+  (let ((ctrl (ctrlbit gate))
+        (targ (targbit gate))
+        (gfmt (fmt gate)))
+    (if (not (null (ctrlreg gate)))
+        (if (not (null (targreg gate)))
+            (format nil gfmt (name (ctrlreg gate)) ctrl (name (targreg gate)) targ)
+            (format nil gfmt (name (ctrlreg gate)) ctrl))
+        (format t "Control register cannot be null"))))
+            
+
+(defun get-operators (xs &optional result-str)
+  " Generates the list of OpenQASM v2.0 quantum gate's intructions.
+
+  Parameters:
+  - xs: the list of quantum gates applied in a quantum circuit.
+  - result-str: the string that will contain the OpenQASM v2.0 instructions. By default is empty.
+  "
+  (if xs
+      (let ((el (car xs)))
+        (get-operators (cdr xs) (concatenate 'string
+                                             result-str
+                                             (get-gate el))))
+      result-str))
+
+
+
+
+
+(defun get-qregisters (xs &optional result-str)
+  (if xs
+      (let ((el (car xs)))
+        (get-qregisters (cdr xs) (concatenate 'string
+                                              result-str
+                                              (format nil "qreg ~a[~a];~%" (name el) (size el))))) result-str))
+
+(defun get-cregisters (xs &optional result-str)
+  (if xs
+      (let ((el (car xs)))
+        (get-cregisters (cdr xs) (concatenate 'string
+                                              result-str
+                                              (format nil "creg ~a[~a];~%" (name el) (size el))))) result-str))
+
+
+
+
+(defun create-openqasm (qc &optional result-str)
+  " Converts the Quantum Circuit into OpenQASM v2.0 code.
+
+  Parameters:
+  - qc: the quantum circuit object.
+  - result-str: the string that will contain the OpenQASM v2.0 code. By default is empty.
+  "
+  (let (
+        (header (format nil "OPENQASM 2.0;~%include \"qelib1.inc\";~%"))
+        (qregs (get-qregisters (qregs qc) ""))
+        (cregs (get-cregisters (cregs qc) ""))
+        (operators (get-operators (reverse (gates qc)) "")))
+    (concatenate 'string result-str header qregs cregs operators)))
+
+
+(defun create-openqasm-file (qc file-path)
+  " Converts the Quantum Circuit into OpenQASM v2.0 code and writes it into a file.
+
+  Parameters:
+  - qc: the quantum circuit object.
+  - file-path: the file path that will be created.
+  "
+  (with-open-file (stream file-path
+                          :direction :output
+                          :if-exists :supersede
+                          :if-does-not-exist :create)
+    (format stream (create-openqasm qc ""))))
+
+;; FOR DEBUG only
+;;(defvar qr (make-qregister 2 "qr"))
+;;(defvar cr (make-cregister 2 "cr"))
+;;(defvar qc (make-qcircuit (list qr) (list cr)))
+;;(hgate qc qr 0)
+;;(xgate qc qr 1)
+;;(cxgate qc qr 0 qr 1)
+;;(measure qc qr 0 cr 0)
+;;(create-openqasm qc "")
