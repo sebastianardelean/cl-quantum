@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; c) 2023, Sebastian Ardelean (sebastian.ardelean@cs.upt.ro)
-;; version 0.0.1 (major minor patch)
+;; c) 2024, Sebastian Ardelean (sebastian.ardelean@cs.upt.ro)
+;; version 1.0.0 (major minor patch)
 ;; version history below
 
 #|
@@ -30,6 +30,7 @@ VERSION HISTORY
 * Dec 13, 2023 (sebastian ardelean): Finished the implementation of functions that generate the OpenQASM code; Added documentation.
 * Dec 21, 2023 (sebastian ardelean): Refactored gate methods and added S,St,T,Tt gates. Removed gate IDs and modified the methods to validate and create a quantum gate.
 * Jul 17, 2024 (sebastian ardelean): Refactored QCircuit's method to use lists of quantum and classical registers.
+* Nov 21, 2024 (sebastian ardelean): Reimplemented gate methods and added CCX gate. Modified gate class to store only the OpenQASM instruction.
 |#
 (defpackage cl-quantum
   (:use :cl)
@@ -59,6 +60,7 @@ VERSION HISTORY
            #:tgate
            #:tdggate
            #:cxgate
+           #:ccxgate
            #:czgate
            #:cygate
            #:chgate
@@ -130,29 +132,14 @@ VERSION HISTORY
 ;; Class definition for Quantum Gate
 
 (defclass qgate()
-  (;; Control register
-   (ctrlreg :accessor ctrlreg :initarg :ctrlreg
-            :documentation "Control Register.")
-   ;; Index of the control qubit
-   (ctrlbit :accessor ctrlbit :initarg :ctrlbit
-            :documentation "Index of the control qubit.")
-   ;; Target register
-   (targreg :accessor targreg :initarg :targreg
-            :documentation "Target Register.")
-   ;; Index of the target qubit
-   (targbit :accessor targbit :initarg :targbit
-            :documentation "Index of the target qubit.")
-   ;; Quantum gate's name
+  (;; Quantum gate's name
    (name :accessor name :initarg :name
          :documentation "Quantum gate's name.")
    ;; Format of the generated OpenQASM v2.0 code
    (fmt :accessor fmt :initarg :fmt
-        :documentation "Format of the generated OpenQASM v2.0 code.")
-   ;; Is the gate a measurement operator?
-   (mop :accessor mop :initarg :mop
-        :documentation "True only if the gate is a measurement operator")))
+        :documentation "Format of the generated OpenQASM v2.0 code.")))
 
-(defun make-qgate (ctrlreg ctrlbit targreg targbit name fmt mop)
+(defun make-qgate (name fmt)
   "Constructor for the Quantum Gate.
 
   Parameters:
@@ -164,18 +151,14 @@ VERSION HISTORY
   - fmt    : format of the generate OpenQASM v2.0 code
   - mop    : true if the operator is for measurement
   "
-  (make-instance 'qgate :ctrlreg ctrlreg
-                        :ctrlbit ctrlbit
-                        :targreg targreg
-                        :targbit targbit
-                        :name name
+  (make-instance 'qgate :name name
                         :fmt fmt
-                        :mop mop))
+                        ))
 
 (defmethod print-object ((obj qgate) stream)
   (print-unreadable-object (obj stream :type t)
-    (format stream "Ctrl register: ~a, Ctrl bits ~a, Target register: ~a, Target bits: ~a, Gate name: ~a, Gate format: ~a, Is Measure: ~a"
-            (ctrlreg obj) (ctrlbit obj) (targreg obj) (targbit obj) (name obj) (fmt obj) (mop obj))))
+    (format stream "Gate name: ~a, Gate format: ~a"
+             (name obj) (fmt obj) )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Class definition for Quantum Circuit
@@ -228,6 +211,8 @@ VERSION HISTORY
               (format t "Register not found in the quantum circuit")))
         (format t "Quantum circuit does not have any quantum registers"))))
 
+
+
 (defmethod hgate ((qc qcircuit) (reg qregister) position)
   " Create and apply a Hadamard gate.
 
@@ -237,7 +222,7 @@ VERSION HISTORY
   - position: the qubit's index in the quantum register on which the gate is applied.
   "
   (if (and (> (size reg) position) (validate-qregister qc reg))
-      (let ((qg (make-qgate reg position nil -1 "Hadamard" "h ~a[~a];~%" nil)))
+      (let ((qg (make-qgate  "Hadamard" (format nil "h ~a[~a];~%" (name reg) position) )))
         (add-gate qc qg))
       (format t "Qubit position or the register is not valid")))
 
@@ -250,7 +235,7 @@ VERSION HISTORY
   - position: the qubit's index in the quantum register on which the gate is applied.
   "
   (if (and (> (size reg) position) (validate-qregister qc reg))
-      (let ((qg (make-qgate reg position nil -1 "Pauli-X" "x ~a[~a];~%" nil)))
+      (let ((qg (make-qgate "Pauli-X" (format nil "x ~a[~a];~%" (name reg) position) )))
         (add-gate qc qg))
       (format t "Qubit position or the register is not valid")))
 
@@ -263,7 +248,7 @@ VERSION HISTORY
   - position: the qubit's index in the quantum register on which the gate is applied.
   "  
   (if (and (> (size reg) position) (validate-qregister qc reg))
-      (let ((qg (make-qgate reg position nil -1 "Pauli-Y" "y ~a[~a];~%" nil)))
+      (let ((qg (make-qgate "Pauli-Y" (format nil "y ~a[~a];~%" (name reg) position) )))
         (add-gate qc qg))
       (format t "Qubit position or the register is not valid")))
 
@@ -276,7 +261,7 @@ VERSION HISTORY
   - position: the qubit's index in the quantum register on which the gate is applied.
   "  
   (if (and (> (size reg) position) (validate-qregister qc reg))
-      (let ((qg (make-qgate reg position nil -1 "Pauli-Z" "z ~a[~a];~%" nil)))
+      (let ((qg (make-qgate "Pauli-Z" (format nil "z ~a[~a];~%" (name reg) position) )))
         (add-gate qc qg))
       (format t "Qubit position or the register is not valid")))
 
@@ -290,7 +275,7 @@ VERSION HISTORY
   - position: the qubit's index in the quantum register on which the gate is applied.
   "  
   (if (and (> (size reg) position) (validate-qregister qc reg))
-      (let ((qg (make-qgate reg position nil -1 "Identity" "i ~a[~a];~%" nil)))
+      (let ((qg (make-qgate "Identity" (format nil "i ~a[~a];~%" (name reg) position) )))
         (add-gate qc qg))
       (format t "Qubit position or the register is not valid")))
 
@@ -304,7 +289,7 @@ VERSION HISTORY
   - position: the qubit's index in the quantum register on which the gate is applied.
   "  
   (if (and (> (size reg) position) (validate-qregister qc reg))
-      (let ((qg (make-qgate reg position nil -1 "SQRT(Z)" "s ~a[~a];~%" nil)))
+      (let ((qg (make-qgate  "SQRT(Z)" (format nil "s ~a[~a];~%" (name reg) position))))
         (add-gate qc qg))
       (format t "Qubit position or the register is not valid")))
 
@@ -317,7 +302,7 @@ VERSION HISTORY
   - position: the qubit's index in the quantum register on which the gate is applied.
   "  
   (if (and (> (size reg) position) (validate-qregister qc reg))
-      (let ((qg (make-qgate reg position nil -1 "Conjugate SQRT(Z)" "sdg ~a[~a];~%" nil)))
+      (let ((qg (make-qgate  "Conjugate SQRT(Z)" (format nil "sdg ~a[~a];~%" (name reg) position) )))
         (add-gate qc qg))
       (format t "Qubit position or the register is not valid")))
 
@@ -331,7 +316,7 @@ VERSION HISTORY
   - position: the qubit's index in the quantum register on which the gate is applied.
   "  
   (if (and (> (size reg) position) (validate-qregister qc reg))
-      (let ((qg (make-qgate reg position nil -1 "SQRT(S)" "t ~a[~a];~%" nil)))
+      (let ((qg (make-qgate "SQRT(S)" (format nil "t ~a[~a];~%" (name reg) position) )))
         (add-gate qc qg))
       (format t "Qubit position or the register is not valid")))
 
@@ -344,9 +329,11 @@ VERSION HISTORY
   - position: the qubit's index in the quantum register on which the gate is applied.
   "  
   (if (and (> (size reg) position) (validate-qregister qc reg))
-      (let ((qg (make-qgate reg position nil -1 "Conjugate SQRT(S)" "tdg ~a[~a];~%" nil)))
+      (let ((qg (make-qgate "Conjugate SQRT(S)" (format nil "tdg ~a[~a];~%" (name reg) position) )))
         (add-gate qc qg))
       (format t "Qubit position or the register is not valid")))
+
+
 
 
 
@@ -362,10 +349,12 @@ VERSION HISTORY
   "
   (if (and (> (size ctrl) ctrlp) (validate-qregister qc ctrl))
       (if (and (> (size targ) targp) (validate-qregister qc targ))
-          (let ((qg (make-qgate ctrl ctrlp targ targp "CNOT" "cx ~a[~a], ~a[~a];~%" nil)))
+          (let ((qg (make-qgate "CNOT" (format nil "cx ~a[~a], ~a[~a];~%" (name ctrl) ctrlp (name targ) targp) )))
             (add-gate qc qg))
-          (format t "Qubit position or the target register is not valid!"))
+           (format t "Qubit position or the target register is not valid!"))
       (format t "Qubit position or the control register is not valid!")))
+
+
 
 
 (defmethod cygate ((qc qcircuit) (ctrl qregister) ctrlp (targ qregister) targp)
@@ -380,7 +369,7 @@ VERSION HISTORY
   "
   (if (and (> (size ctrl) ctrlp) (validate-qregister qc ctrl))
       (if (and (> (size targ) targp) (validate-qregister qc targ))
-          (let ((qg (make-qgate ctrl ctrlp targ targp "CY" "cy ~a[~a], ~a[~a];~%" nil)))
+          (let ((qg (make-qgate "CY" (format nil "cy ~a[~a], ~a[~a];~%" (name ctrl) ctrlp (name targ) targp) )))
             (add-gate qc qg))
           (format t "Qubit position or the target register is not valid!"))
       (format t "Qubit position or the control register is not valid!")))
@@ -399,7 +388,7 @@ VERSION HISTORY
   "
   (if (and (> (size ctrl) ctrlp) (validate-qregister qc ctrl))
       (if (and (> (size targ) targp) (validate-qregister qc targ))
-          (let ((qg (make-qgate ctrl ctrlp targ targp "CZ" "cz ~a[~a], ~a[~a];~%" nil)))
+          (let ((qg (make-qgate "CZ" (format nil "cz ~a[~a], ~a[~a];~%" (name ctrl) ctrlp (name targ) targp) )))
             (add-gate qc qg))
           (format t "Qubit position or the target register is not valid!"))
       (format t "Qubit position or the control register is not valid!")))
@@ -416,10 +405,34 @@ VERSION HISTORY
   "
   (if (and (> (size ctrl) ctrlp) (validate-qregister qc ctrl))
       (if (and (> (size targ) targp) (validate-qregister qc targ))
-          (let ((qg (make-qgate ctrl ctrlp targ targp "CH" "ch ~a[~a], ~a[~a];~%" nil)))
+          (let ((qg (make-qgate "CH" (format nil "ch ~a[~a], ~a[~a];~%" (name ctrl) ctrlp (name targ) targp) )))
             (add-gate qc qg))
           (format t "Qubit position or the target register is not valid!"))
       (format t "Qubit position or the control register is not valid!")))
+
+
+(defmethod ccxgate ((qc qcircuit) (ctrl0 qregister) ctrlp0 (ctrl1 qregister) ctrlp1 (targ qregister) targp)
+  " Create and apply a Controlled-X gate.
+
+  Parameters:
+  - qc      : quantum circuit.
+  - ctrl0    : control quantum register.
+  - ctrlp0   : the qubit's index in the control quantum register.
+  - ctrl1    : control quantum register.
+  - ctrlp1   : the qubit's index in the control quantum register.
+  - targ    : target quantum register.
+  - targp   : the qubit's index in the target quantum register.
+  "
+  (if (and (> (size ctrl0) ctrlp0) (validate-qregister qc ctrl0))
+      (if (and (> (size ctrl1) ctrlp1) (validate-qregister qc ctrl1))
+          (if (and (> (size targ) targp) (validate-qregister qc targ))
+              (let ((qg (make-qgate "CNOT" (format nil "ccx ~a[~a], ~a[~a] ,~a[~a];~%" (name ctrl0) ctrlp0 (name ctrl1) ctrlp1 (name targ) targp) )))
+                (add-gate qc qg))
+              (format t "Qubit position or the target register is not valid!"))
+          (format t "Qubit position or the control register is not valid!"))
+      (format t "Qubit position or the control register is not valid!")))
+
+
 
 (defmethod measure ((qc qcircuit) (ctrl qregister) ctrlp (targ cregister) targp)
   " Create and apply a Measurement operator.
@@ -433,23 +446,16 @@ VERSION HISTORY
   "
   (if (and (> (size ctrl) ctrlp) (validate-qregister qc ctrl))
       (if (and (> (size targ) targp) (validate-cregister qc targ))
-          (let ((qg (make-qgate ctrl ctrlp targ targp "Measurement" "measure ~a[~a] -> ~a[~a];~%" t)))
+          (let ((qg (make-qgate "Measurement" (format nil "measure ~a[~a] -> ~a[~a];~%" (name ctrl) ctrlp (name targ) targp) )))
             (add-gate qc qg))
           (format t "Qubit position or the classical register is not valid!"))
       (format t "Qubit position or the quantum register is not valid!")))
 
 
 
-
 (defun get-gate (gate)
-  (let ((ctrl (ctrlbit gate))
-        (targ (targbit gate))
-        (gfmt (fmt gate)))
-    (if (not (null (ctrlreg gate)))
-        (if (not (null (targreg gate)))
-            (format nil gfmt (name (ctrlreg gate)) ctrl (name (targreg gate)) targ)
-            (format nil gfmt (name (ctrlreg gate)) ctrl))
-        (format t "Control register cannot be null"))))
+  (fmt gate))
+
             
 
 (defun get-operators (xs &optional result-str)
