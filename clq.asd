@@ -1,21 +1,21 @@
-(defsystem "cl-quantum"
-  :version "1.0.0"
-  :author "Sebastian Ardelean"
+(defsystem "clq"
+  :version "0.0.1"
+  :author ""
   :license ""
   :depends-on ()
   :components ((:module "src"
                 :components
                 ((:file "main"))))
   :description ""
-  :in-order-to ((test-op (test-op "cl-quantum/tests"))))
+  :in-order-to ((test-op (test-op "clq/tests"))))
 
-(defsystem "cl-quantum/tests"
-  :author "Sebastian Ardelean"
+(defsystem "clq/tests"
+  :author ""
   :license ""
-  :depends-on ("cl-quantum"
+  :depends-on ("clq"
                "rove")
   :components ((:module "tests"
                 :components
                 ((:file "main"))))
-  :description "Test system for cl-quantum"
+  :description "Test system for clq"
   :perform (test-op (op c) (symbol-call :rove :run c)))

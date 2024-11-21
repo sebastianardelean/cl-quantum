@@ -1,8 +1,8 @@
-* Cl-Quantum 
+* clq 
 
 ** Usage
 
-*cl-quantum* is a package that allows the definition and development of quantum circuits in Common Lisp and to export them to *OpenQASM v2.0*.
+*clq* is a package that allows the definition and development of quantum circuits in Common Lisp and to export them to *OpenQASM v2.0*.
 
 The following code presents an example that initializes a quantum circuit made of one 2-qubits quantum register and one 2-bits classical register.
 We apply on the circuit Hadamard, Pauli-X, Pauli-Y, Pauli-Z and CNOT gates.
@@ -49,38 +49,38 @@ To save the generated code in a file, the function ~(defun save-openqasm-to-file
 ;; Oracle f(x) = 1
 
 (defun oracle-f2 (qc qr)
-  (cl-quantum:xgate qc qr 1))
+  (clq:xgate qc qr 1))
 
 ;; Oracle f(x) = x
 (defun oracle-f3 (qc cqr tqr)
-  (cl-quantum:cnotgate qc cqr 0 tqr 1))
+  (clq:cnotgate qc cqr 0 tqr 1))
 
 ;; Oracle f(x) = 1 - x
 
 (defun oracle-f4 (qc cqr tqr)
   (progn
-    (cl-quantum:cnotgate qc cqr 0 tqr 1)
-    (cl-quantum:xgate qc cqr 1)))
+    (clq:cnotgate qc cqr 0 tqr 1)
+    (clq:xgate qc cqr 1)))
 
 
-(defconstant  +QREG+ (cl-quantum:make-qregister 2 "q"))
-(defconstant  +CREG+ (cl-quantum:make-cregister 1 "c"))
+(defconstant  +QREG+ (clq:make-qregister 2 "q"))
+(defconstant  +CREG+ (clq:make-cregister 1 "c"))
 
 (defun run ()
-  (let ((qc   (cl-quantum:make-qcircuit (list +QREG+) (list +CREG+))))
+  (let ((qc   (clq:make-qcircuit (list +QREG+) (list +CREG+))))
     (progn
-      (cl-quantum:xgate qc +QREG+ 1)
-      (cl-quantum:hgate qc +QREG+ 0)
-      (cl-quantum:hgate qc +QREG+ 1)
+      (clq:xgate qc +QREG+ 1)
+      (clq:hgate qc +QREG+ 0)
+      (clq:hgate qc +QREG+ 1)
       (oracle-f2 qc +QREG+)
-      (cl-quantum:hgate qc +QREG+ 0)
-      (cl-quantum:measure qc +QREG+ 0 +CREG+ 0)
-      (cl-quantum:generate-openqasm qc ""))))
+      (clq:hgate qc +QREG+ 0)
+      (clq:measure qc +QREG+ 0 +CREG+ 0)
+      (clq:generate-openqasm qc ""))))
 #+end_src
 
 ** Installation
 
-In your new project add the package as a dependency or in REPL run ~(ql:quickload "cl-quantum")~.
+In your new project add the package as a dependency or in REPL run ~(ql:quickload "clq")~.
 
 
 ** Author

@@ -6,13 +6,13 @@
 #|
 DESCRIPTION
 
-CL-QUANTUM (Common Lisp Quantum) is a package, written in
+CLQ (Common Lisp Quantum) is a package, written in
 Common Lisp, that allows a user to define a quantum circuit
 in terms of quantum register, quantum gates, and classical register
 and to export it to OpenQASM. Thus, the circuit defined in Common Lisp
 can be simulated or run on IBMQ quantum processors.
 
-CL-QUANTUM was developed to ease the development of quantum algorithms
+CLQ was developed to ease the development of quantum algorithms
 following the circuit model, while having an easy to use but complex API.
 The driving motivation for implementing this package was the need of
 having a small library--that can be extended as needed--to define quantum
@@ -32,7 +32,7 @@ VERSION HISTORY
 * Jul 17, 2024 (sebastian ardelean): Refactored QCircuit's method to use lists of quantum and classical registers.
 * Nov 21, 2024 (sebastian ardelean): Reimplemented gate methods and added CCX gate. Modified gate class to store only the OpenQASM instruction.
 |#
-(defpackage cl-quantum
+(defpackage clq
   (:use :cl)
   (:export #:qregister
            #:make-qregister
@@ -69,7 +69,7 @@ VERSION HISTORY
            #:generate-openqasm
            #:save-openqasm-to-file))
 
-(in-package :cl-quantum)
+(in-package :clq)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Class definition for the Quantum Register

@@ -1,10 +1,10 @@
-(defpackage cl-quantum/tests/main
+(defpackage clq/tests/main
   (:use :cl
-        :cl-quantum
+        :clq
         :rove))
-(in-package :cl-quantum/tests/main)
+(in-package :clq/tests/main)
 
-;; NOTE: To run this test file, execute `(asdf:test-system :cl-quantum)' in your Lisp.
+;; NOTE: To run this test file, execute `(asdf:test-system :clq)' in your Lisp.
 
 (deftest test-create-qreg
   (testing "Creating qregister"
@@ -22,5 +22,3 @@
           (qreg (make-qregister 2 "q"))
           (qc   (make-qcircuit (list qreg) (list creg))))
       (ok (and (= 2 (size (qregs qc))) (= 2 (size (cregs qc))))))))
-
-
