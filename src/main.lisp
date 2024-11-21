@@ -64,6 +64,7 @@ VERSION HISTORY
            #:czgate
            #:cygate
            #:chgate
+           #:qbarrier
            #:measure
            #:generate-openqasm
            #:save-openqasm-to-file))
@@ -452,6 +453,9 @@ VERSION HISTORY
       (format t "Qubit position or the quantum register is not valid!")))
 
 
+(defmethod qbarrier ((qc qcircuit))
+  (let ((qg (make-qgate "barrier" (format nil "barrier ~{~A~^,~};~%" (mapcar #'name (qregs qc))))))
+    (add-gate qc qg)))
 
 (defun get-gate (gate)
   (fmt gate))
